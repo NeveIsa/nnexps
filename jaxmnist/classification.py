@@ -3,10 +3,10 @@ from jax import grad,jit
 import jax.numpy as jnp
 from jax.tree_util import tree_map
 import jax
-from sklearn.datasets import load_digits
 from fire import Fire
 from tqdm import tqdm
 import plotext as plt
+from helpers import gettesttrain
 
 def nnet(params, X, y):
     W = params[0]
@@ -27,6 +27,7 @@ def train(X,y,params,lr):
         params = tree_map(lambda x,y: x-lrate*y, params, g)
         pbar.set_postfix({'loss':nnet(params,X,y)})
     return params
+
     
 def main(lr=0.01,iters=100):
     fanin,fanout = 64,1
@@ -34,23 +35,9 @@ def main(lr=0.01,iters=100):
     # W = np.random.rand(fanin,fanout)*0.1
     b = np.zeros(fanout)
 
-    digits = load_digits()
-    X = digits['images'].reshape(-1,64)
-    y = digits['target']
-    idx = np.where((y==1)|(y==0))
-    y = y[idx]
-    # y[y==0] = -1
-    X = X[idx]
-    N = len(y)
-    X = (X-X.mean())/X.std()**2
+    Xtrain, ytrain, Xtest, ytest = gettesttrain() 
 
-    idtrain = np.random.choice(range(N), 300,replace=False)
-    idtest = list(set(range(N)) - set(idtrain))
-    Xtrain,ytrain = X[idtrain], y[idtrain]
-    Xtest,ytest = X[idtest], y[idtest]
-    
-
-    lr = [lr]*100 + [10*lr]*100 + [100*lr]*100
+    lr = [lr]*(iters//3) + [10*lr]*(iters//3) + [100*lr]*(iters//3)
     params = train(Xtrain,ytrain,[W,b], lr=lr)
     print (nnet(params,Xtest,ytest))
     # print(Xtest[0].tolist())
